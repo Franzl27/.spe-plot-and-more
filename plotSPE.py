@@ -58,7 +58,6 @@ class gp(object):
 
 		self.p = Popen([self.gnuplot_address], stdin=PIPE, stderr=PIPE, stdout=PIPE,
 					   bufsize=1, shell=False, universal_newlines=True) #, creationflags=subprocess.CREATE_NO_WINDOW #geht nur unter Windows, aber hilft die Gnuplot-Konsole zu verstecken
-
 		self.q_err = Queue()
 		self.t_err = Thread(target=self.enqueue_std, args=(self.p.stderr, self.q_err))
 		self.t_err.daemon = True
@@ -575,7 +574,6 @@ EXTRA_CONFIG = [
 		"borderwidth": "1",
 		"file_count": "5",
 		"offset_var": "0",
-		"xoffset_var": "0",
 		"divliv_var": False,
 		"automation_var": "No automation",
 		"customcommands": custom_commands,
@@ -619,12 +617,12 @@ def handle_arguments():
 		if arg.lower().endswith((".spe", ".sep"))  # Ignoriere Groß-/Kleinschreibung
 	]
 
-	# neeee:Wenn mehr als 10 valide Argumente vorhanden sind, eine neue Instanz starten
-	# ~ if len(valid_args) > file_choose_lines:
-		# ~ new_args = valid_args[file_choose_lines:]
-		# ~ subprocess.Popen([sys.executable, __file__] + new_args)
-		# ~ sys.argv = [sys.argv[0]] + valid_args[:file_choose_lines]  # Begrenze die aktuellen Argumente
-	sys.argv = [sys.argv[0]] + valid_args[:]
+	# Wenn mehr als 10 valide Argumente vorhanden sind, eine neue Instanz starten
+	if len(valid_args) > file_choose_lines:
+		new_args = valid_args[file_choose_lines:]
+		subprocess.Popen([sys.executable, __file__] + new_args)
+		sys.argv = [sys.argv[0]] + valid_args[:file_choose_lines]  # Begrenze die aktuellen Argumente
+	sys.argv = [sys.argv[0]] + valid_args[:file_choose_lines]
 	return noargs
 
 
@@ -1484,7 +1482,6 @@ def main():
 			print("Auto plot selected")
 			if(widgets_extra[0]["outputradio"].get() in {"pdf","png"}):
 				plotgo()
-				sleep(14) #waiting for the process would be better, but cannot wait for gnuplot do i
 				if os.path.exists(tmp_file):
 					os.remove(tmp_file)
 				sys.exit()
@@ -2236,15 +2233,8 @@ def main():
 		try:
 			return try_plotgo()
 		except BrokenPipeError:
-			messagebox.showinfo("Broken Pipe Error", "Gnuplot crashed \n Please restart this software")
-		except Exception as e:
-			error_message = traceback.format_exc()  # Stacktrace als String speichern
-			messagebox.showerror("Unexpected Error", f"An unexpected error occurred:\n{error_message}")
-			# ~ return try_plotgo()
-		# ~ except BrokenPipeError:
-			# ~ messagebox.showinfo("Broken Pipe Error","Gnuplot crashed \n Please restart this software")
-		# ~ except:
-			
+			messagebox.showinfo("Broken Pipe Error","Gnuplot crashed \n Please restart this software")
+	
 	def try_plotgo():
 		# ~ print(parse_and_merge_intervals(find_roi('Tc08.Spe')))
 		efficy = validate_efficy(eff_var)
@@ -2349,8 +2339,7 @@ def main():
 					return "# Invalid selection"
 						
 		def make_plotlines(channelja):
-			
-			xoffset = config2[0]["xoffset_var"]	
+				
 			koeff0 = '0'
 			koeff1 = '1'
 			koeff2 = '0'
@@ -2376,8 +2365,7 @@ def main():
 					if(widgets_extra[0]["displayroi"].get() == True):
 						for j,roi in enumerate(roilist[i]):
 							# ~ print(roilist[i][j].split()[0],roilist[i][j].split()[1])
-							plotlines.append('"' + tmp_file + '" using ((($0 >= ' + roilist[i][j].split()[0] + ' && $0 <= ' + roilist[i][j].split()[1] + ') ? (' + '0' + '+' + '1' + '*$0+' + '0' + '*$0**2 + ' + str(float(xoffset) * (i)) + ') : 1/0)):(($0 >= ' + roilist[i][j].split()[0] + ' && $0 <= ' + roilist[i][j].split()[1] + ') ? $' + str(i+1) + '/' + str(efficy) + ' : 1/0)' + ' with ' + plottingstyle + ' linecolor rgb "' + roi_color_button.cget("bg") + '" dashtype ' + dashtype + ' title ""')
-							
+							plotlines.append('"' + tmp_file + '" using ((($0 >= ' + roilist[i][j].split()[0] + ' && $0 <= ' + roilist[i][j].split()[1] + ') ? (' + '0' + '+' + '1' + '*$0+' + '0' + '*$0**2) : 1/0)):(($0 >= ' + roilist[i][j].split()[0] + ' && $0 <= ' + roilist[i][j].split()[1] + ') ? $' + str(i+1) + '/' + str(efficy) + ' : 1/0)' + ' with ' + plottingstyle + ' linecolor rgb "' + roi_color_button.cget("bg") + '" dashtype ' + dashtype + ' title ""')
 						usingstring = '(('
 						if not roilist[i] or not len(roilist[i]) % 2 ==0:
 							usingstring += '($0 < 0 && $0 > '
@@ -2392,9 +2380,8 @@ def main():
 								usingstring += ')'
 								if k<len(roilist[i])-1:
 									usingstring += ' || '
-						usingstring += ') ? 1/0 : $0 + ' + str(float(xoffset) * (i)) + ')'	
+						usingstring += ') ? 1/0 : $0)'	
 						plotlines.append('"' + tmp_file + '" using (' + usingstring + '):($' + str(i+1) + '/' + str(efficy) + ') with ' + plottingstyle + ' linecolor rgb "' + widgets[i]['button_color_var'].get() + '" dashtype ' + dashtype + ' title "' + widgets[i]['small_text_var'].get() + '"')
-						# ~ plotlines.append('"' + tmp_file + '" using (' + usingstring + '):($1' + '/' + str(efficy) + ') with ' + plottingstyle + ' linecolor rgb "' + widgets[i]['button_color_var'].get() + '" dashtype ' + dashtype + ' title "' + widgets[i]['small_text_var'].get() + '"')
 						gpc_indices.append(len(plotlines))
 						# ~ plotlines.append('endfile') #SURE ABOUT THIS?
 								
@@ -2422,7 +2409,7 @@ def main():
 
 						for j,roi in enumerate(roilist[i]):
 							# ~ print(roilist[i][j].split()[0],roilist[i][j].split()[1])
-							plotlines.append('"' + tmp_file + '" using ((($0 >= ' + roilist[i][j].split()[0] + ' && $0 <= ' + roilist[i][j].split()[1] + ') ? (' + koeff0 + '+' + koeff1 + '*$0+' + koeff2 + '*$0**2 + ' + str(float(xoffset) * (i)) + ') : 1/0)):(($0 >= ' + roilist[i][j].split()[0] + ' && $0 <= ' + roilist[i][j].split()[1] + ') ? ($' + str(i+1) + '/' + str(efficy) + ') : 1/0)' + ' with ' + plottingstyle + ' linecolor rgb "' + roi_color_button.cget("bg") + '" dashtype ' + dashtype + ' title ""')
+							plotlines.append('"' + tmp_file + '" using ((($0 >= ' + roilist[i][j].split()[0] + ' && $0 <= ' + roilist[i][j].split()[1] + ') ? (' + koeff0 + '+' + koeff1 + '*$0+' + koeff2 + '*$0**2) : 1/0)):(($0 >= ' + roilist[i][j].split()[0] + ' && $0 <= ' + roilist[i][j].split()[1] + ') ? ($' + str(i+1) + '/' + str(efficy) + ') : 1/0)' + ' with ' + plottingstyle + ' linecolor rgb "' + roi_color_button.cget("bg") + '" dashtype ' + dashtype + ' title ""')
 						
 						usingstring = '(('
 						if not roilist[i] or not len(roilist[i]) % 2 ==0:
@@ -2439,16 +2426,14 @@ def main():
 								if k<len(roilist[i])-1:
 									usingstring += ' || '
 						usingstring += ') ? 1/0 :('	
-						usingstring += koeff0 + '+' + koeff1 + '*$0+' + koeff2 + '*$0**2 + ' + str(float(xoffset) * (i)) + ')'	
+						usingstring += koeff0 + '+' + koeff1 + '*$0+' + koeff2 + '*$0**2)'	
 						usingstring += '))'	
 						plotlines.append('"' + tmp_file + '" using (' + usingstring + ':($' + str(i+1) + '/' + str(efficy) + ')' + ' with ' + plottingstyle + ' linecolor rgb "' + widgets[i]['button_color_var'].get() + '" dashtype ' + dashtype + ' title "' + widgets[i]['small_text_var'].get() + '"')
-						# ~ plotlines.append('"' + tmp_file + '" using (' + usingstring + ':($1' + '/' + str(efficy) + ')' + ' with ' + plottingstyle + ' linecolor rgb "' + widgets[i]['button_color_var'].get() + '" dashtype ' + dashtype + ' title "' + widgets[i]['small_text_var'].get() + '"')
 						gpc_indices.append(len(plotlines))
 			
 			# ~ ent	fer	ne	plotlines.append('"' + tmp_file + '" using (' + str(float(spedatalist[i][7][1].split()[0])) + '+' + str(float(spedatalist[i][7][1].split()[1])) + '*column(0)+' + str(float(spedatalist[i][7][1].split()[2])) + '*column(0)**2):' + str(i+1) + ' with ' + plottingstyle + ' linecolor rgb "' + widgets[i]['button_color_var'].get() + '" dashtype ' + dashtype + ' title "' + widgets[i]['small_text_var'].get() + '"')
 					else:	
-						plotlines.append('"' + tmp_file + '" using (' + koeff0 + '+' + koeff1 + '*column(0)+' + koeff2 + '*column(0)**2 + ' + str(float(xoffset) * (i)) + '):($' + str(i+1) + '/' + str(efficy) + ')' + ' with ' + plottingstyle + ' linecolor rgb "' + widgets[i]['button_color_var'].get() + '" dashtype ' + dashtype + ' title "' + widgets[i]['small_text_var'].get() + '"')
-						# ~ plotlines.append('"' + tmp_file + '" using (' + koeff0 + '+' + koeff1 + '*column(0)+' + koeff2 + '*column(0)**2 + ' + str(float(xoffset) * (i)) + '):($1' + '/' + str(efficy) + ')' + ' with ' + plottingstyle + ' linecolor rgb "' + widgets[i]['button_color_var'].get() + '" dashtype ' + dashtype + ' title "' + widgets[i]['small_text_var'].get() + '"')
+						plotlines.append('"' + tmp_file + '" using (' + koeff0 + '+' + koeff1 + '*column(0)+' + koeff2 + '*column(0)**2):($' + str(i+1) + '/' + str(efficy) + ')' + ' with ' + plottingstyle + ' linecolor rgb "' + widgets[i]['button_color_var'].get() + '" dashtype ' + dashtype + ' title "' + widgets[i]['small_text_var'].get() + '"')
 						gpc_indices.append(len(plotlines))
 			usingstring=''
 			print(plotlines)
@@ -2594,7 +2579,7 @@ def main():
 			# ~ elif(widgets_extra[0]["outputradio"].get()=="interactive window"):
 				# ~ for i,filenm in enumerate(flnmlst):					
 					# ~ gp_commands.append("set terminal wxt " + str(i))
-
+		
 		plo.save(dataonly, tmp_file)
 		# ~ plo.save(add_to_list_elements(dataonly,config2[0]["offset_var"]), tmp_file)
 		for cmd in gp_commands:
@@ -2789,7 +2774,6 @@ def main():
 			config["customcommands"] = custom_text.get("1.0", "end").strip() 
 			config["bordercolor"] = bordercolor_button.cget("bg")
 			config["offset_var"] = offset_var.get()
-			config["xoffset_var"] = xoffset_var.get()
 			config["key_placement"] = dropdown_key.get()
 			config["file_count"] = windows_entry_var.get()
 			config["logx"] = logx_var.get()
@@ -2817,7 +2801,6 @@ def main():
 			config["comment_var"] = comment_var.get()
 			config["bordercolor"] = bordercolor_button.cget("bg")
 			config["offset_var"] = offset_var.get()
-			config["xoffset_var"] = xoffset_var.get()
 			config["key_placement"] = dropdown_key.get()
 			config["file_count"] = windows_entry_var.get()
 			config["logx"] = logx_var.get()
@@ -2866,11 +2849,9 @@ def main():
 		# ~ number1_var.trace("w", lambda *args: validate_number(number1_entry, number1_message))
 
 		offset_var = tk.StringVar(value=config["offset_var"])
-		xoffset_var = tk.StringVar(value=config["xoffset_var"])
 		offset_entry = tk.Entry(settings_window, textvariable=offset_var)
-		xoffset_entry = tk.Entry(settings_window, textvariable=xoffset_var)
-		offset_label = tk.Label(settings_window, text="Y offset per spectrum:")
-		offset_label2 = tk.Label(settings_window, text="X offset per spectrum:")
+		offset_label = tk.Label(settings_window, text="Plot offset per spectrum:")
+		offset_label2 = tk.Label(settings_window, text="(added to y-value)")
 		offset_message = tk.Label(settings_window, text="", fg="red")
 		# ~ offset_var.trace("w", lambda *args: validate_number(number2_entry, number2_message))
 
@@ -2971,7 +2952,6 @@ def main():
 		
 		windows_entry.bind("<KeyRelease>", lambda event: validate_windows(windows_entry))
 		offset_entry.bind("<KeyRelease>", lambda event: validate_numeric(offset_entry))
-		xoffset_entry.bind("<KeyRelease>", lambda event: validate_numeric(xoffset_entry))
 		gtrans_entry.bind("<KeyRelease>", lambda event: validate_input(gtrans_entry))
 		borderwidth_entry.bind("<KeyRelease>", lambda event: is_float(borderwidth_entry))
 		dropdown_key.bind("<<ComboboxSelected>>", update_label)
@@ -2985,7 +2965,6 @@ def main():
 		offset_label.grid(row=1, column=0, sticky="w")
 		offset_label2.grid(row=1, column=2, padx=5, sticky="w")
 		offset_entry.grid(row=1, column=1, sticky="w")
-		xoffset_entry.grid(row=1, column=3, sticky="w")
 		offset_message.grid(row=1, column=2, sticky="w")
 
 		dropdown_label.grid(row=2, column=0, sticky="w")
@@ -3082,14 +3061,12 @@ def main():
 		help_texts = {
 			"de": (
 				"Dieses Programm dient vornehmlich dem Plotten von Spektren (.Spe-Dateien), die mit Maestro-Software wie GammaVision aufgenommen wurden.\n"
-				"Bis zu zehn oder mehr (einstellbar, max 100) Spektren können gleichzeitig eingelesen und geplottet werden. Spektren können als Argumente beim Programmstart übergeben werden, wodurch die Felder für den Dateipfad automatisch ausgefüllt werden. "
-				"Falls mehr Argumente als eingestellt übergeben werden, werden entsprechend weitere Instanzen des Programms gestartet, wobei jede Instanz maximal die eingestellte Anzahl an Dateien bearbeitet. Abgesehen davon ist die Anzahl der Argumente unbegrenzt.\n"
-				"Bei plötzlichen Problemen kann es helfen die .json Konfigurationsdatei zu löschen -> Standardkonfiguration wird geladen!\n"
+				"Bis zu zehn oder mehr (einstellbar) Spektren können gleichzeitig eingelesen und geplottet werden. Spektren können als Argumente beim Programmstart übergeben werden, wodurch die Felder für den Dateipfad automatisch ausgefüllt werden. "
+				"Falls mehr Argumente als eingestellt übergeben werden, werden entsprechend weitere Instanzen des Programms gestartet, wobei jede Instanz maximal zehn Dateien bearbeitet. Abgesehen davon ist die Anzahl der Argumente unbegrenzt.\n"
 				"Das Programm bietet folgende Funktionen:\n"
 				"- Speicherung der eingestellten Optionen für den nächsten Programmstart\n"
 				"- Plotten als .pdf, .png oder im interaktiven Fenster\n"
 				"- Plotten gegen Kanäle oder Energie\n"
-				"- Plotten mit Offset (x,y) bei mehreren: pro Spektrum\n"
 				"- Einzelplots pro Spektrum oder mehrere Spektren pro Graph\n"
 				"- Exportieren der Plotanweisungen für gnuplot als .gp-Datei\n"
 				"- Diverse Plotoptionen (z. B. Plotten gegen Kanäle oder Energie, Einzelplots pro Datei oder bis zu zehn oder mehr (einstellbar) Spektren pro Graph, Korrektur der Counts durch Division zur Effizienzkorrektur oder Zählratenberechnung, Hervorheben von ROIs in anderer Farbe usw.)\n"
@@ -3111,14 +3088,12 @@ def main():
 			),
 			"en": (
 				"This program is primarily used to plot spectra (.Spe files) recorded using Maestro software such as GammaVision.\n"
-				"Up to ten ore more (advanced settings, max 100) spectra can be imported and plotted simultaneously. Spectra can be provided as arguments when launching the program, which automatically fills the file path fields. "
-				"If more than ten arguments are given, additional instances of the program are started, with each instance processing up to the set amount of files. The number of arguments is unlimited.\n"
-				"By encountering sudden problems try to delete the .json file!\n"
+				"Up to ten ore more (advanced settings) spectra can be imported and plotted simultaneously. Spectra can be provided as arguments when launching the program, which automatically fills the file path fields. "
+				"If more than ten arguments are given, additional instances of the program are started, with each instance processing up to ten or more files. The number of arguments is unlimited.\n"
 				"The program offers the following features:\n"
 				"- Saving the configured options for the next program launch\n"
 				"- Plotting as .pdf, .png, or in an interactive window\n"
 				"- Plotting against channels or energy\n"
-				"- Plotting with x/y offset per spectrum for comparison\n"
 				"- Individual plots per spectrum or multiple spectra on one graph\n"
 				"- Exporting plot commands for Gnuplot as .gp\n"
 				"- Various plotting options (e.g., plotting against channels or energy, single plots per file or up to ten or more spectra on one graph, correcting counts by division for efficiency correction or count rate calculation, ROIs in different colors, etc.)\n"
@@ -3648,12 +3623,6 @@ def main():
 	global file_choose_lines
 	file_choose_lines = int(config2[0]["file_count"])
 	noargs = handle_arguments()
-	if not noargs:
-		# ~ file_choose_lines = len(sys.argv)-1
-		if len(sys.argv) < 6: #less than 5 args: 5 file chooser anyway
-			file_choose_lines = 5
-		else:
-			file_choose_lines = len(sys.argv)-1
 	for i in range(file_choose_lines):
 		if not config1[i].get("button_color"):
 			config1[i]["button_color"] = random_color()
@@ -4039,15 +4008,7 @@ def main():
 	
 	# ~ open_settings_window(config2[0])
 	root.protocol("WM_DELETE_WINDOW", on_closing)
-	try:
-		root.mainloop()  # Tkinter-Hauptschleife starten
-	except KeyboardInterrupt:
-		print("\nUser-Goodbye erkannt! Und tschuess Fenster...NO_SAVE_Goodbye my dear!")
-		if os.path.exists(tmp_file):
-			os.remove(tmp_file)
-		root.quit()
-		root.destroy()
-	# ~ root.mainloop()
+	root.mainloop()
 
 if __name__ == "__main__":
 	main()
