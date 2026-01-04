@@ -24,12 +24,13 @@ The executable already includes **Python (with all required modules)** as well a
 
 # Making Your Own Windows Executable
 **Copy the folder _WindowsExecutable_ to your harddisk**
-- Install _pyinstaller_
-- Replace .ico file for a real one
-- Add plotSPE.py to the folder
-- Run the .bat file in the folder
+- Install _pyinstaller_ in your Python environment
+- Replace .ico file for a real one (or disable icon usage)
+- Add `plotSPE.py` to the folder
+- Run `createEXEwin.bat` in the folder
+  - If you want an executable suitable for the Windows "open with" dialogue run `createEXEwin.bat` instead
   
-The additional Python script is necessary to make changes to the source code, so that the obtained executable is no longer attached to a (visible) terminal. For a Linux executable this is obsolete. For Linux the process is not described here.
+The additional Python script is necessary to make changes to the source code, so that the obtained executable is no longer attached to a (visible) terminal or for a direct automatic plot (open with dialogue). 
 
 # Program Startup and Configuration Files
 
