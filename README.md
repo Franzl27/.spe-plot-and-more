@@ -28,7 +28,8 @@ The executable already includes **Python (with all required modules)** as well a
 - Replace .ico file for a real one
 - Add plotSPE.py to the folder
 - Run the .bat file in the folder
-The additional Python script is necessary to make changes to the source code, so that the obtained executable is no longer attached to a (visible) terminal. For a Linux executable this is obsolete.
+  
+The additional Python script is necessary to make changes to the source code, so that the obtained executable is no longer attached to a (visible) terminal. For a Linux executable this is obsolete. For Linux the process is not described here.
 
 # Program Startup and Configuration Files
 
