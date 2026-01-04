@@ -22,6 +22,12 @@ The executable already includes **Python (with all required modules)** as well a
 
 ---
 
+# Making Your Own Windows Executable
+**Copy the folder _WindowsExecutable_ to your harddisk**
+- Replace .ico file for a real one
+- Add plotSPE.py to the folder
+- Run the .bat file
+
 # Program Startup and Configuration Files
 
 When the program is started for the first time, it loads **default settings**.  
