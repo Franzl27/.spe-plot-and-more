@@ -14,7 +14,11 @@ The executable already includes **Python (with all required modules)** as well a
 
 [Main window of the application](images/main-nr.png)
 
+<img src="images/main-nr.png" width="800">
+
 [Advanced Settings Window](images/settings-nr.png)
+
+<img src="images/settings-nr.png" width="600">
 
 ---
 
