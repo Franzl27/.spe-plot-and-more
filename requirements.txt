@@ -1,0 +1,14 @@
+tkinter
+datetime
+json
+random
+sys
+platform
+os
+itertools
+math
+subprocess
+re
+shutil
+pandas
+openpyxl
